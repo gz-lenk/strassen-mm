@@ -25,15 +25,15 @@ void GemmReadAB_wide(
 ){
     #pragma HLS DATAFLOW
     read_A:
-    for(int i = 0; i < BLOCK_SIZE/6; i++){
-        for(int j = 0; j < BLOCK_SIZE; j++){
+    for(int i = 0; i < BLOCK_SIZE; i++){
+        for(int j = 0; j < BLOCK_SIZE/6; j++){
             #pragma HLS PIPELINE
             stream_A.write(input_A[i*(BLOCK_SIZE/6)+j]);
         }
     }
     read_B:
-    for(int j = 0; j < BLOCK_SIZE/6; j++){
-        for(int i = 0; i < BLOCK_SIZE; i++){
+    for(int j = 0; j < BLOCK_SIZE; j++){
+        for(int i = 0; i < BLOCK_SIZE/6; i++){
             #pragma HLS PIPELINE
             stream_B.write(input_B[j*(BLOCK_SIZE/6)+i]);
         }

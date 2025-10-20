@@ -71,6 +71,32 @@ void unpack_C(ap_uint<192>* C_packed, int32_t* C_unpacked) {
     }
 }
 
+void rearrange_C(int32_t* C_hardware, int32_t* C_normal) {
+    // 硬件输出的顺序：按block_i(行), block_j(列), tile_row, tile_col
+    // 每个tile输出6行，每行包含6个元素
+    int hardware_index = 0;
+    
+    for (int block_i = 0; block_i < BLOCK_SIZE; block_i += TILE_SIZE) {
+        for (int block_j = 0; block_j < BLOCK_SIZE; block_j += TILE_SIZE) {
+            for (int tile_row = 0; tile_row < TILE_SIZE; tile_row++) {
+                // 从硬件输出中读取一个packed数据（包含6个元素）
+                int32_t temp_data[TILE_SIZE];
+                for (int j = 0; j < TILE_SIZE; j++) {
+                    temp_data[j] = C_hardware[hardware_index * TILE_SIZE + j];
+                }
+                
+                // 将6个元素分配到对应的位置
+                for (int tile_col = 0; tile_col < TILE_SIZE; tile_col++) {
+                    int normal_index = (block_i + tile_row) * BLOCK_SIZE + (block_j + tile_col);
+                    C_normal[normal_index] = temp_data[tile_col];
+                }
+                
+                hardware_index++;
+            }
+        }
+    }
+}
+
 void software_matmul(int8_t* A, int8_t* B, int32_t* C, int size) {
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
@@ -137,6 +163,7 @@ int test_mm_pipeline() {
 
     int8_t A_original[BLOCK_SIZE * BLOCK_SIZE];
     int8_t B_original[BLOCK_SIZE * BLOCK_SIZE];
+    int32_t C_original[BLOCK_SIZE * BLOCK_SIZE];
     
     const int packed_A_size = (BLOCK_SIZE * BLOCK_SIZE) / 6;  // 每个 ap_uint<48> 包含 6 个元素
     const int packed_B_size = (BLOCK_SIZE * BLOCK_SIZE) / 6;
@@ -162,7 +189,8 @@ int test_mm_pipeline() {
     std::cout << "Calling mm_pipeline..." << std::endl;
     mm_pipeline(A_packed, B_packed, C_packed);
 
-    unpack_C(C_packed, C_hw);
+    unpack_C(C_packed, C_original);
+    rearrange_C(C_original, C_hw);
     print_matrix_int32(C_hw, BLOCK_SIZE, BLOCK_SIZE, "Matrix C from Hardware");
 
     std::cout << "Running software verification..." << std::endl;
@@ -213,6 +241,7 @@ int test_edge_cases() {
         
         mm_pipeline(A_packed, B_packed, C_packed);
         unpack_C(C_packed, C_hw);
+        rearrange_C(C_hw, C_hw);  // 重排C矩阵
         software_matmul(A_original, B_original, C_sw, BLOCK_SIZE);
         
         if (!compare_matrices(C_hw, C_sw, BLOCK_SIZE)) {
@@ -246,6 +275,7 @@ int test_edge_cases() {
         
         mm_pipeline(A_packed, B_packed, C_packed);
         unpack_C(C_packed, C_hw);
+        rearrange_C(C_hw, C_hw);  // 重排C矩阵
         software_matmul(A_original, B_original, C_sw, BLOCK_SIZE);
         
         if (!compare_matrices(C_hw, C_sw, BLOCK_SIZE)) {
