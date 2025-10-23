@@ -290,54 +290,9 @@ void StrassenWriteC(
 
 void mm_pipeline(
     AXI_DATA_IN* A,
-    AXI_DATA_IN* B,    addTile_4(input_B, 1, 2, 5, 6, 1, 1, 1, 1, stream_B);
-    addTile_4(input_B, 0, 3, 4, 7, 1, 1, 1, 1, stream_B);
-    addTile_4(input_B, 2, 3, 6, 7, 1, 0, 1, 0, stream_B);
-    addTile_4(input_B, 0, 1, 4, 5, 1, 1, 1, 1, stream_B);
-    addTile_4(input_B, 1, 2, 5, 6, 0, 0, 0, 0, stream_B);
-    addTile_4(input_B, 0, 3, 4, 7, 0, 1, 0, 1, stream_B);
-    addTile_4(input_B, 4, 5, 8, 9, 1, 1, 1, 1, stream_B);
-    addTile_4(input_B, 5, 6, 9, 10, 1, 1, 1, 1, stream_B);
-    addTile_4(input_B, 4, 7, 8, 11, 1, 1, 1, 1, stream_B);
-    addTile_4(input_B, 6, 7, 10, 11, 1, 0, 1, 0, stream_B);
-    addTile_4(input_B, 4, 5, 8, 9, 1, 1, 1, 1, stream_B);
-    addTile_4(input_B, 5, 6, 9, 10, 0, 0, 0, 0, stream_B);
-    addTile_4(input_B, 4, 7, 8, 11, 0, 1, 0, 1, stream_B);
-    addTile_4(input_B, 0, 1, 12, 13, 1, 1, 1, 1, stream_B);
-    addTile_4(input_B, 1, 2, 13, 14, 1, 1, 1, 1, stream_B);
-    addTile_4(input_B, 0, 3, 12, 15, 1, 1, 1, 1, stream_B);
-    addTile_4(input_B, 2, 3, 14, 15, 1, 0, 1, 0, stream_B);
-    addTile_4(input_B, 0, 1, 12, 13, 1, 1, 1, 1, stream_B);
-    addTile_4(input_B, 1, 2, 13, 14, 0, 0, 0, 0, stream_B);
-    addTile_4(input_B, 0, 3, 12, 15, 0, 1, 0, 1, stream_B);
-    addTile_4(input_B, 8, 9, 12, 13, 1, 1, 0, 0, stream_B);
-    addTile_4(input_B, 9, 10, 13, 14, 1, 1, 0, 0, stream_B);
-    addTile_4(input_B, 8, 11, 12, 15, 1, 1, 0, 0, stream_B);
-    addTile_4(input_B, 10, 11, 14, 15, 1, 0, 0, 1, stream_B);
-    addTile_4(input_B, 8, 9, 12, 13, 1, 1, 0, 0, stream_B);
-    addTile_4(input_B, 9, 10, 13, 14, 0, 0, 1, 1, stream_B);
-    addTile_4(input_B, 8, 11, 12, 15, 0, 1, 1, 0, stream_B);
-    addTile_4(input_B, 0, 1, 4, 5, 1, 1, 1, 1, stream_B);
-    addTile_4(input_B, 1, 2, 5, 6, 1, 1, 1, 1, stream_B);
-    addTile_4(input_B, 0, 3, 4, 7, 1, 1, 1, 1, stream_B);
-    addTile_4(input_B, 2, 3, 6, 7, 1, 0, 1, 0, stream_B);
-    addTile_4(input_B, 0, 1, 4, 5, 1, 1, 1, 1, stream_B);
-    addTile_4(input_B, 1, 2, 5, 6, 0, 0, 0, 0, stream_B);
-    addTile_4(input_B, 0, 3, 4, 7, 0, 1, 0, 1, stream_B);
-    addTile_4(input_B, 4, 5, 8, 9, 0, 0, 0, 0, stream_B);
-    addTile_4(input_B, 5, 6, 9, 10, 0, 0, 0, 0, stream_B);
-    addTile_4(input_B, 4, 7, 8, 11, 0, 0, 0, 0, stream_B);
-    addTile_4(input_B, 6, 7, 10, 11, 0, 1, 0, 1, stream_B);
-    addTile_4(input_B, 4, 5, 8, 9, 0, 0, 0, 0, stream_B);
-    addTile_4(input_B, 5, 6, 9, 10, 1, 1, 1, 1, stream_B);
-    addTile_4(input_B, 4, 7, 8, 11, 1, 0, 1, 0, stream_B);
-    addTile_4(input_B, 0, 1, 12, 13, 0, 0, 1, 1, stream_B);
-    addTile_4(input_B, 1, 2, 13, 14, 0, 0, 1, 1, stream_B);
-    addTile_4(input_B, 0, 3, 12, 15, 0, 0, 1, 1, stream_B);
-    addTile_4(input_B, 2, 3, 14, 15, 0, 1, 1, 0, stream_B);
-    addTile_4(input_B, 0, 1, 12, 13, 0, 0, 1, 1, stream_B);
-    addTile_4(input_B, 1, 2, 13, 14, 1, 1, 0, 0, stream_B);
-    addTile_4(input_B, 0, 3, 12, 15, 1, 0, 0, 1, stream_B);
+    AXI_DATA_IN* B,
+    AXI_DATA_IN* C
+){
     #pragma HLS INTERFACE m_axi port=A offset=slave bundle=gmemA depth=BLOCK_SIZE*BLOCK_SIZE/32
     #pragma HLS INTERFACE m_axi port=B offset=slave bundle=gmemB depth=BLOCK_SIZE*BLOCK_SIZE/32
     #pragma HLS INTERFACE m_axi port=C offset=slave bundle=gmemC depth=BLOCK_SIZE*BLOCK_SIZE/8
@@ -356,6 +311,6 @@ void mm_pipeline(
     StrassenReadAB(A, B, buf_A, buf_B);
     // StrassenBlock(buf_A, buf_B, buf_M);
     // StrassenOutBuffer(buf_M, buf_C);
-    //StrassenWriteC(buf_C, C);
+    // StrassenWriteC(buf_C, C);
 
 }
