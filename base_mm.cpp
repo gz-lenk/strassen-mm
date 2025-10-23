@@ -118,8 +118,7 @@ void base_mm_shift(
         ap_uint<192> packed_C = pack_int32_to_ap_uint192(temp_data);
         stream_C.write(packed_C);
     }
-
-
+    
 }
 
 void GemmBlock_wide(
