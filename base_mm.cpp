@@ -166,6 +166,8 @@ void mm_pipeline(
     #pragma HLS INTERFACE m_axi port=B offset=slave bundle=gmemB depth=BLOCK_SIZE*BLOCK_SIZE
     #pragma HLS INTERFACE m_axi port=C offset=slave bundle=gmemC depth=BLOCK_SIZE*BLOCK_SIZE
 
+    #pragma HLS DATAFLOW
+
     hls::stream<ap_uint<48>> buf_A;
     hls::stream<ap_uint<48>> buf_B;
     hls::stream<ap_uint<192>> buf_C;
