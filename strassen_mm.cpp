@@ -6,7 +6,7 @@ void addTile_1(
     unsigned int sign1,
     hls::stream<hls::vector<DTYPE_IN, INPUT_PACK_SIZE>>& stream_buf
 ){
-    #pragma HLS INLINE OFF
+    #pragma HLS INLINE
 
     for(int p = 0; p < TOTAL_TILE_ELEMENTS/INPUT_PACK_SIZE; p++){
         #pragma HLS PIPELINE
@@ -32,7 +32,7 @@ void addTile_2(
     unsigned int sign2,
     hls::stream<hls::vector<DTYPE_IN, INPUT_PACK_SIZE>>& stream_buf
 ){
-    #pragma HLS INLINE OFF
+    #pragma HLS INLINE
 
     for(int p = 0; p < TOTAL_TILE_ELEMENTS/INPUT_PACK_SIZE; p++){
         #pragma HLS PIPELINE
@@ -66,7 +66,7 @@ void addTile_3(
     unsigned int sign3,
     hls::stream<hls::vector<DTYPE_IN, INPUT_PACK_SIZE>>& stream_buf
 ){
-    #pragma HLS INLINE OFF
+    #pragma HLS INLINE
 
     for(int p = 0; p < TOTAL_TILE_ELEMENTS/INPUT_PACK_SIZE; p++){
         #pragma HLS PIPELINE
@@ -108,7 +108,7 @@ void addTile_4(
     unsigned int sign4,
     hls::stream<hls::vector<DTYPE_IN, INPUT_PACK_SIZE>>& stream_buf
 ){
-    #pragma HLS INLINE OFF
+    #pragma HLS INLINE
 
     for(int p = 0; p < TOTAL_TILE_ELEMENTS/INPUT_PACK_SIZE; p++){
         #pragma HLS PIPELINE
@@ -290,12 +290,14 @@ void base_mm(
     hls::stream<hls::vector<DTYPE_IN, INPUT_PACK_SIZE>>& stream_B,
     hls::stream<hls::vector<DTYPE_IN, INPUT_PACK_SIZE>>& stream_M
 ){
+    #pragma HLS DATAFLOW
     
     DTYPE_IN M_accum[TILE_SIZE][TILE_SIZE];
     #pragma HLS ARRAY_PARTITION variable=M_accum complete dim=0
 
     init:
     for(int i = 0; i < TILE_SIZE; i++) {
+        #pragma HLS PIPELINE
         for(int j = 0; j < TILE_SIZE; j++) {
             #pragma HLS UNROLL
             M_accum[i][j] = 0;
@@ -337,6 +339,7 @@ void StrassenBlock(
     hls::stream<hls::vector<DTYPE_IN, INPUT_PACK_SIZE>>& stream_M
 ){
     for(int idx = 0; idx < 49; idx++){
+        #pragma HLS PIPELINE
         base_mm(stream_A, stream_B, stream_M);
     }
 }
@@ -347,7 +350,8 @@ void bufferTileStrassen_1(
     const bool sign1,
     DTYPE_OUT* buffer_c
 ){
-    #pragma HLS INLINE OFF
+    #pragma HLS INLINE
+
     for(int p = 0; p < TILE_SIZE*TILE_SIZE; p+=INPUT_PACK_SIZE){
         #pragma HLS PIPELINE
         hls::vector<DTYPE_IN, INPUT_PACK_SIZE> current_vec = stream_M.read();
@@ -372,7 +376,8 @@ void bufferTileStrassen_2(
     const bool sign2,
     DTYPE_OUT* buffer_c
 ){
-    #pragma HLS INLINE OFF
+    #pragma HLS INLINE
+
     for(int p = 0; p < TILE_SIZE*TILE_SIZE; p+=INPUT_PACK_SIZE){
         #pragma HLS PIPELINE
         hls::vector<DTYPE_IN, INPUT_PACK_SIZE> current_vec = stream_M.read();
@@ -402,7 +407,8 @@ void bufferTileStrassen_3(
     const bool sign3,
     DTYPE_OUT* buffer_c
 ){
-    #pragma HLS INLINE OFF
+    #pragma HLS INLINE
+
     for(int p = 0; p < TILE_SIZE*TILE_SIZE; p+=INPUT_PACK_SIZE){
         #pragma HLS PIPELINE
         hls::vector<DTYPE_IN, INPUT_PACK_SIZE> current_vec = stream_M.read();
@@ -439,7 +445,8 @@ void bufferTileStrassen_4(
     const bool sign4,
     DTYPE_OUT* buffer_c
 ){
-    #pragma HLS INLINE OFF
+    #pragma HLS INLINE
+
     for(int p = 0; p < TILE_SIZE*TILE_SIZE; p+=INPUT_PACK_SIZE){
         #pragma HLS PIPELINE
         hls::vector<DTYPE_IN, INPUT_PACK_SIZE> current_vec = stream_M.read();
