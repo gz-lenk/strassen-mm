@@ -4,7 +4,7 @@ void addTile_1(
     AXI_DATA_IN* buffer,
     unsigned int idx1,
     unsigned int sign1,
-    hls::stream<hls::vector<DTYPE_IN, 32>>& stream_buf
+    hls::stream<hls::vector<DTYPE_IN, INPUT_PACK_SIZE>>& stream_buf
 ){
     #pragma HLS INLINE OFF
 
@@ -30,7 +30,7 @@ void addTile_2(
     unsigned int idx2,
     unsigned int sign1,
     unsigned int sign2,
-    hls::stream<hls::vector<DTYPE_IN, 32>>& stream_buf
+    hls::stream<hls::vector<DTYPE_IN, INPUT_PACK_SIZE>>& stream_buf
 ){
     #pragma HLS INLINE OFF
 
@@ -64,7 +64,7 @@ void addTile_3(
     unsigned int sign1,
     unsigned int sign2,
     unsigned int sign3,
-    hls::stream<hls::vector<DTYPE_IN, 32>>& stream_buf
+    hls::stream<hls::vector<DTYPE_IN, INPUT_PACK_SIZE>>& stream_buf
 ){
     #pragma HLS INLINE OFF
 
@@ -106,7 +106,7 @@ void addTile_4(
     unsigned int sign2,
     unsigned int sign3,
     unsigned int sign4,
-    hls::stream<hls::vector<DTYPE_IN, 32>>& stream_buf
+    hls::stream<hls::vector<DTYPE_IN, INPUT_PACK_SIZE>>& stream_buf
 ){
     #pragma HLS INLINE OFF
 
@@ -148,8 +148,8 @@ void addTile_4(
 void StrassenReadAB(
     AXI_DATA_IN* input_A,
     AXI_DATA_IN* input_B,
-    hls::stream<hls::vector<DTYPE_IN, 32>>& stream_A,
-    hls::stream<hls::vector<DTYPE_IN, 32>>& stream_B
+    hls::stream<hls::vector<DTYPE_IN, INPUT_PACK_SIZE>>& stream_A,
+    hls::stream<hls::vector<DTYPE_IN, INPUT_PACK_SIZE>>& stream_B
 ){
     #pragma HLS DATAFLOW
     // read_A:
@@ -347,6 +347,7 @@ void bufferTileStrassen_1(
     const bool sign1,
     DTYPE_OUT* buffer_c
 ){
+    #pragma HLS INLINE OFF
     for(int p = 0; p < TILE_SIZE*TILE_SIZE; p+=INPUT_PACK_SIZE){
         #pragma HLS PIPELINE
         hls::vector<DTYPE_IN, INPUT_PACK_SIZE> current_vec = stream_M.read();
@@ -371,6 +372,7 @@ void bufferTileStrassen_2(
     const bool sign2,
     DTYPE_OUT* buffer_c
 ){
+    #pragma HLS INLINE OFF
     for(int p = 0; p < TILE_SIZE*TILE_SIZE; p+=INPUT_PACK_SIZE){
         #pragma HLS PIPELINE
         hls::vector<DTYPE_IN, INPUT_PACK_SIZE> current_vec = stream_M.read();
@@ -400,6 +402,7 @@ void bufferTileStrassen_3(
     const bool sign3,
     DTYPE_OUT* buffer_c
 ){
+    #pragma HLS INLINE OFF
     for(int p = 0; p < TILE_SIZE*TILE_SIZE; p+=INPUT_PACK_SIZE){
         #pragma HLS PIPELINE
         hls::vector<DTYPE_IN, INPUT_PACK_SIZE> current_vec = stream_M.read();
@@ -436,6 +439,7 @@ void bufferTileStrassen_4(
     const bool sign4,
     DTYPE_OUT* buffer_c
 ){
+    #pragma HLS INLINE OFF
     for(int p = 0; p < TILE_SIZE*TILE_SIZE; p+=INPUT_PACK_SIZE){
         #pragma HLS PIPELINE
         hls::vector<DTYPE_IN, INPUT_PACK_SIZE> current_vec = stream_M.read();
@@ -473,14 +477,70 @@ void StrassenOutBuffer(
 ){
     #pragma HLS DATAFLOW
 
-    DTYPE_IN buffer_c[49*TILE_SIZE*TILE_SIZE];
+    DTYPE_OUT buffer_c[16*TILE_SIZE*TILE_SIZE];
     #pragma HLS BIND_STORAGE variable = buffer_c type = RAM_2P impl = BRAM
     #pragma HLS ARRAY_PARTITION variable=buffer_c complete
 
-    
+    bufferTileStrassen_4(stream_M, 0, 1, 3, 1, 12, 1, 15, 1, buffer_c);
+    bufferTileStrassen_4(stream_M, 2, 1, 3, 0, 14, 1, 15, 0, buffer_c);
+    bufferTileStrassen_2(stream_M, 1, 1, 13, 1, buffer_c);
+    bufferTileStrassen_4(stream_M, 0, 1, 2, 1, 12, 1, 14, 1, buffer_c);
+    bufferTileStrassen_2(stream_M, 1, 1, 13, 1, buffer_c);
+    bufferTileStrassen_2(stream_M, 3, 1, 15, 1, buffer_c);
+    bufferTileStrassen_2(stream_M, 0, 1, 12, 1, buffer_c);
+    bufferTileStrassen_4(stream_M, 8, 1, 11, 1, 12, 0, 15, 0, buffer_c);
+    bufferTileStrassen_4(stream_M, 10, 1, 11, 0, 14, 0, 15, 1, buffer_c);
+    bufferTileStrassen_2(stream_M, 9, 1, 13, 0, buffer_c);
+    bufferTileStrassen_4(stream_M, 8, 1, 10, 1, 12, 0, 14, 0, buffer_c);
+    bufferTileStrassen_2(stream_M, 9, 1, 13, 0, buffer_c);
+    bufferTileStrassen_2(stream_M, 11, 1, 15, 0, buffer_c);
+    bufferTileStrassen_2(stream_M, 8, 1, 12, 0, buffer_c);
+    bufferTileStrassen_2(stream_M, 4, 1, 7, 1, buffer_c);
+    bufferTileStrassen_2(stream_M, 6, 1, 7, 0, buffer_c);
+    bufferTileStrassen_1(stream_M, 5, 1, buffer_c);
+    bufferTileStrassen_2(stream_M, 4, 1, 6, 1, buffer_c);
+    bufferTileStrassen_1(stream_M, 5, 1, buffer_c);
+    bufferTileStrassen_1(stream_M, 7, 1, buffer_c);
+    bufferTileStrassen_1(stream_M, 4, 1, buffer_c);
+    bufferTileStrassen_4(stream_M, 0, 1, 3, 1, 8, 1, 11, 1, buffer_c);
+    bufferTileStrassen_4(stream_M, 2, 1, 3, 0, 10, 1, 11, 0, buffer_c);
+    bufferTileStrassen_2(stream_M, 1, 1, 9, 1, buffer_c);
+    bufferTileStrassen_4(stream_M, 0, 1, 2, 1, 8, 1, 10, 1, buffer_c);
+    bufferTileStrassen_2(stream_M, 1, 1, 9, 1, buffer_c);
+    bufferTileStrassen_2(stream_M, 3, 1, 11, 1, buffer_c);
+    bufferTileStrassen_2(stream_M, 0, 1, 8, 1, buffer_c);
+    bufferTileStrassen_2(stream_M, 4, 1, 7, 1, buffer_c);
+    bufferTileStrassen_2(stream_M, 6, 1, 7, 0, buffer_c);
+    bufferTileStrassen_1(stream_M, 5, 1, buffer_c);
+    bufferTileStrassen_2(stream_M, 4, 1, 6, 1, buffer_c);
+    bufferTileStrassen_1(stream_M, 5, 1, buffer_c);
+    bufferTileStrassen_1(stream_M, 7, 1, buffer_c);
+    bufferTileStrassen_1(stream_M, 4, 1, buffer_c);
+    bufferTileStrassen_2(stream_M, 12, 1, 15, 1, buffer_c);
+    bufferTileStrassen_2(stream_M, 14, 1, 15, 0, buffer_c);
+    bufferTileStrassen_1(stream_M, 13, 1, buffer_c);
+    bufferTileStrassen_2(stream_M, 12, 1, 14, 1, buffer_c);
+    bufferTileStrassen_1(stream_M, 13, 1, buffer_c);
+    bufferTileStrassen_1(stream_M, 15, 1, buffer_c);
+    bufferTileStrassen_1(stream_M, 12, 1, buffer_c);
+    bufferTileStrassen_2(stream_M, 0, 1, 3, 1, buffer_c);
+    bufferTileStrassen_2(stream_M, 2, 1, 3, 0, buffer_c);
+    bufferTileStrassen_1(stream_M, 1, 1, buffer_c);
+    bufferTileStrassen_2(stream_M, 0, 1, 2, 1, buffer_c);
+    bufferTileStrassen_1(stream_M, 1, 1, buffer_c);
+    bufferTileStrassen_1(stream_M, 3, 1, buffer_c);
+    bufferTileStrassen_1(stream_M, 0, 1, buffer_c);
 
-
-
+    // Stream out the buffer
+    for(int p = 0; p < 16*TILE_SIZE*TILE_SIZE; p+=OUTPUT_PACK_SIZE){
+        #pragma HLS PIPELINE
+        hls::vector<DTYPE_OUT, OUTPUT_PACK_SIZE> current_data;
+        for(int i = 0; i < OUTPUT_PACK_SIZE; i++){
+            #pragma HLS UNROLL
+            current_data[i] = buffer_c[p+i];
+        }
+        stream_C << current_data;
+    }
 }
 
 void StrassenWriteC(
@@ -511,10 +571,10 @@ void mm_pipeline(
 
     #pragma HLS DATAFLOW
 
-    hls::stream<hls::vector<DTYPE_IN, 32>> buf_A;
-    hls::stream<hls::vector<DTYPE_IN, 32>> buf_B;
-    hls::stream<hls::vector<DTYPE_IN, 32>> buf_M;
-    hls::stream<hls::vector<DTYPE_OUT, 8>> buf_C;
+    hls::stream<hls::vector<DTYPE_IN, INPUT_PACK_SIZE>> buf_A;
+    hls::stream<hls::vector<DTYPE_IN, INPUT_PACK_SIZE>> buf_B;
+    hls::stream<hls::vector<DTYPE_IN, INPUT_PACK_SIZE>> buf_M;
+    hls::stream<hls::vector<DTYPE_OUT, OUTPUT_PACK_SIZE>> buf_C;
 
     #pragma HLS STREAM variable=buf_A depth=BLOCK_SIZE*BLOCK_SIZE/32
     #pragma HLS STREAM variable=buf_B depth=BLOCK_SIZE*BLOCK_SIZE/32

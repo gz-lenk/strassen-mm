@@ -7,15 +7,15 @@
 typedef int8_t          DTYPE_IN;
 typedef int32_t         DTYPE_OUT;
 
-typedef ap_uint<256>    AXI_DATA_IN;
-typedef ap_uint<256>    AXI_DATA_OUT;
+typedef ap_uint<64>    AXI_DATA_IN;
+typedef ap_uint<64>    AXI_DATA_OUT;
 
-#define MATRIX_SIZE         2048
-#define BLOCK_SIZE          128
-#define TILE_SIZE           32
+#define MATRIX_SIZE         512
+#define BLOCK_SIZE          32
+#define TILE_SIZE           8
 
-#define INPUT_PACK_SIZE     32              // 256bit/8bit 输入接口一次传输的数据量
-#define OUTPUT_PACK_SIZE    8               // 256bit/32bit 输出接口一次传输的数据量
+#define INPUT_PACK_SIZE     8              // 256bit/8bit 输入接口一次传输的数据量
+#define OUTPUT_PACK_SIZE    2               // 256bit/32bit 输出接口一次传输的数据量
 
 #define TOTAL_MATRIX_ELEMENTS       MATRIX_SIZE*MATRIX_SIZE
 #define TOTAL_BLOCK_ELEMENTS        BLOCK_SIZE*BLOCK_SIZE
