@@ -339,7 +339,6 @@ void StrassenBlock(
     hls::stream<hls::vector<DTYPE_IN, INPUT_PACK_SIZE>>& stream_M
 ){
     for(int idx = 0; idx < 49; idx++){
-        #pragma HLS PIPELINE
         base_mm(stream_A, stream_B, stream_M);
     }
 }
@@ -570,7 +569,7 @@ void StrassenWriteC(
 void mm_pipeline(
     AXI_DATA_IN* A,
     AXI_DATA_IN* B,
-    AXI_DATA_IN* C
+    AXI_DATA_OUT* C
 ){
     #pragma HLS INTERFACE m_axi port=A offset=slave bundle=gmemA depth=BLOCK_SIZE*BLOCK_SIZE/32
     #pragma HLS INTERFACE m_axi port=B offset=slave bundle=gmemB depth=BLOCK_SIZE*BLOCK_SIZE/32
