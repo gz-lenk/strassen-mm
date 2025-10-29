@@ -15,7 +15,6 @@ typedef hls::stream<MemIntType> MemStream;
 
 #define PARALLEL_M          6
 #define PARALLEL_N          6
-#define K_BUFFER_DIM        TILE_SIZE + PARALLEL_M + PARALLEL_N
 
 void GemmReadAB_wide(
     ap_uint<48>* input_A,
@@ -24,18 +23,36 @@ void GemmReadAB_wide(
     hls::stream<ap_uint<48>>& stream_B
 ){
     #pragma HLS DATAFLOW
-    read_A:
-    for(int i = 0; i < BLOCK_SIZE; i++){
-        for(int j = 0; j < BLOCK_SIZE/6; j++){
-            #pragma HLS PIPELINE
-            stream_A.write(input_A[i*(BLOCK_SIZE/6)+j]);
-        }
-    }
-    read_B:
-    for(int j = 0; j < BLOCK_SIZE; j++){
-        for(int i = 0; i < BLOCK_SIZE/6; i++){
-            #pragma HLS PIPELINE
-            stream_B.write(input_B[j*(BLOCK_SIZE/6)+i]);
+    
+    // 分块矩阵乘法：C[i][j] += A[i][k] * B[k][j]
+    // 需要为每个block_k循环提供对应的A和B数据块
+    block_i_loop:
+    for(int block_i = 0; block_i < BLOCK_SIZE; block_i += TILE_SIZE) {
+        block_j_loop:
+        for(int block_j = 0; block_j < BLOCK_SIZE; block_j += TILE_SIZE) {
+            block_k_loop:
+            for(int block_k = 0; block_k < BLOCK_SIZE; block_k += TILE_SIZE) {
+                #pragma HLS PIPELINE
+                // 为当前block_k提供A矩阵的block_i行数据
+                // A矩阵：block_i行，block_k列的数据块
+                for(int tile_row = 0; tile_row < TILE_SIZE; tile_row++) {
+                    #pragma HLS PIPELINE
+                    int global_row = block_i + tile_row;
+                    int global_col_block = block_k / TILE_SIZE;
+                    int packed_index = global_row * (BLOCK_SIZE / TILE_SIZE) + global_col_block;
+                    stream_A.write(input_A[packed_index]);
+                }
+                
+                // 为当前block_k提供B矩阵的block_k列数据
+                // B矩阵：block_k行，block_j列的数据块
+                for(int tile_col = 0; tile_col < TILE_SIZE; tile_col++) {
+                    #pragma HLS PIPELINE
+                    int global_row_block = block_k / TILE_SIZE;
+                    int global_col = block_j + tile_col;
+                    int packed_index = global_row_block * (BLOCK_SIZE / TILE_SIZE) + (global_col / TILE_SIZE);
+                    stream_B.write(input_B[packed_index]);
+                }
+            }
         }
     }
 }
@@ -270,6 +287,14 @@ void GemmBlock_wide(
             accum_k:
             for(int block_k = 0; block_k < BLOCK_SIZE; block_k += TILE_SIZE) {
                 #pragma HLS LOOP_TRIPCOUNT max=4 min=4 avg=4
+                for(int i = 0; i < TILE_SIZE; i++) {
+                    #pragma HLS UNROLL
+                    for(int j = 0; j < TILE_SIZE; j++) {
+                        #pragma HLS UNROLL
+                        accum_C[i][j] = 0;
+                    }
+                }
+
                 for(int tile_row = 0; tile_row < TILE_SIZE; tile_row++){
                     ap_uint<192> pack_tile_c = tile_C_stream.read();
                     int32_t pack_data[TILE_SIZE];

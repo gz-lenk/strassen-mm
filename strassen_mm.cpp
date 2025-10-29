@@ -179,7 +179,7 @@ void StrassenReadAB(
     // }
 
     ///////////////////////////////////////////////////////////////////
-    // code for A to A_linear
+    // code for A to A_linear 49*Tile个数据包
     ///////////////////////////////////////////////////////////////////
     addTile_4(input_A, 0, 3, 12, 15, 1, 1, 1, 1, stream_A);
     addTile_2(input_A, 0, 12, 1, 1, stream_A);
