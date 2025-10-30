@@ -186,13 +186,12 @@ void base_mm(
     // 执行矩阵乘法
     row_for_AB:
     for(int i = 0; i < TILE_SIZE; ++i){
-        col_for_AB:
         for(int j = 0; j < TILE_SIZE; ++j){
             int32_t sum = 0;
             product:
             for(int k = 0; k < TILE_SIZE; ++k){
                 #pragma HLS UNROLL
-                sum += A_buf[i][k] * B_buf[k][j];
+                sum += A_buf[i][k] * B_buf[j][k];
             }
             C_accum[i][j] = sum;
         }
