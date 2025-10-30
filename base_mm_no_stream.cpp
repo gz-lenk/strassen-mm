@@ -7,20 +7,20 @@
 
 
 void matrix_mul(
-    int8_t A[M][K],
-    int8_t B[K][N],
-    int32_t AB[M][N]
+    int8_t A[BLOCK_SIZE][BLOCK_SIZE],
+    int8_t B[BLOCK_SIZE][BLOCK_SIZE],
+    int32_t AB[BLOCK_SIZE][BLOCK_SIZE]
 ){
     #pragma HLS ARRAY_RESHAPE variable=A complete dim=2
     #pragma HLS ARRAY_RESHAPE variable=B complete dim=1
     row_for_AB:
-    for(int i = 0; i < M; ++i){
+    for(int i = 0; i < BLOCK_SIZE; ++i){
         col_for_AB:
-        for(int j = 0; j < N; ++j){
+        for(int j = 0; j < BLOCK_SIZE; ++j){
             #pragma HLS PIPELINE II=1
             int32_t sum = 0;
             product:
-            for(int k = 0; k < K; ++k){
+            for(int k = 0; k < BLOCK_SIZE; ++k){
                 sum += A[i][k] * B[k][j];
             }
             AB[i][j] = sum;
