@@ -6,13 +6,16 @@
 #include <ctime>
 
 void mm_pipeline(
-    ap_uint<48>* A,
-    ap_uint<48>* B,
+    ap_uint<192>* A,
+    ap_uint<192>* B,
     ap_uint<192>* C
 );
 
 #define TILE_SIZE 6
 #define BLOCK_SIZE 24
+
+#define INPUT_PACK_SIZE     24
+#define OUTPUT_PACK_SIZE    6
 
 // 生成随机矩阵
 void generate_random_matrix(int8_t* matrix, int size) {
@@ -21,40 +24,34 @@ void generate_random_matrix(int8_t* matrix, int size) {
     }
 }
 
-// 打包A矩阵
-void pack_A(int8_t* A_original, ap_uint<48>* A_packed) {
-    int packed_index = 0;
-    for (int block_i = 0; block_i < BLOCK_SIZE; block_i += TILE_SIZE) {
-        for (int block_j = 0; block_j < BLOCK_SIZE; block_j += TILE_SIZE) {
-            for (int tile_row = 0; tile_row < TILE_SIZE; tile_row++) {
-                ap_uint<48> packed_value = 0;
-                for (int tile_col = 0; tile_col < TILE_SIZE; tile_col++) {
-                    int original_row = block_i + tile_row;
-                    int original_col = block_j + tile_col;
-                    int8_t value = A_original[original_row * BLOCK_SIZE + original_col];
-                    packed_value.range(8 * tile_col + 7, 8 * tile_col) = (ap_uint<8>)value;
-                }
-                A_packed[packed_index++] = packed_value;
+void pack_A(int8_t* A_original, ap_uint<192>* A_packed){
+    int packed_idx = 0;
+    for (int block_row = 0; block_row < BLOCK_SIZE; block_row += TILE_SIZE){
+        for(int tile_row = 0; tile_row < TILE_SIZE; tile_row++){
+            ap_uint<192> packed_value = 0;
+            for(int i = 0; i < INPUT_PACK_SIZE; i++){
+                int original_row = block_row + tile_row;
+                int original_col = i;
+                int8_t value = A_original[original_row * BLOCK_SIZE + original_col];
+                packed_value.range(8 * i + 7, 8 * i) = (ap_uint<8>)value;
             }
         }
     }
 }
 
 // 打包B矩阵
-void pack_B(int8_t* B_original, ap_uint<48>* B_packed) {
+void pack_B(int8_t* B_original, ap_uint<192>* B_packed) {
     int packed_index = 0;
-    for (int block_j = 0; block_j < BLOCK_SIZE; block_j += TILE_SIZE) {
-        for (int block_i = 0; block_i < BLOCK_SIZE; block_i += TILE_SIZE) {
-            for (int tile_col = 0; tile_col < TILE_SIZE; tile_col++) {
-                ap_uint<48> packed_value = 0;
-                for (int tile_row = 0; tile_row < TILE_SIZE; tile_row++) {
-                    int original_row = block_i + tile_row;
-                    int original_col = block_j + tile_col;
-                    int8_t value = B_original[original_row * BLOCK_SIZE + original_col];
-                    packed_value.range(8 * tile_row + 7, 8 * tile_row) = (ap_uint<8>)value;
-                }
-                B_packed[packed_index++] = packed_value;
+    for (int block_col = 0; block_col < BLOCK_SIZE; block_col += TILE_SIZE) {
+        for (int tile_col = 0; tile_col < TILE_SIZE; tile_col++) {
+            ap_uint<192> packed_value = 0;
+            for (int i = 0; i < TILE_SIZE; i++) {
+                int original_row = i;
+                int original_col = block_col + tile_col;
+                int8_t value = B_original[original_row * BLOCK_SIZE + original_col];
+                packed_value.range(8 * i + 7, 8 * i) = (ap_uint<8>)value;
             }
+            B_packed[packed_index++] = packed_value;
         }
     }
 }

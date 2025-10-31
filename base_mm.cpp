@@ -4,11 +4,8 @@
 #include <stdio.h>
 #include <iostream>
 
-#define INPUT_PACK_SIZE     6
+#define INPUT_PACK_SIZE     24
 #define OUTPUT_PACK_SIZE    6
-
-#define PACK_SIZE           32 
-#define PACKED_C            8  
 
 #define BLOCK_SIZE          24
 #define TILE_SIZE           6     
@@ -16,59 +13,47 @@
 typedef int8_t          DTYPE_IN;
 typedef int32_t         DTYPE_OUT;
 
-typedef ap_uint<48>                              MemIntType;
+typedef ap_uint<192>                             MemIntType;
 typedef hls::vector<DTYPE_IN, INPUT_PACK_SIZE>   MemVecType;
 typedef hls::stream<MemVecType>                  MemStream;
 
-#define PARALLEL_M          6
-#define PARALLEL_N          6
-
 void GemmReadAB_wide(
-    ap_uint<48>* input_A,
-    ap_uint<48>* input_B,
-    MemStream& stream_A,
+    MemIntType* input_A,
+    MemIntType* input_B,
+    MemStream&  stream_A,
     MemStream& stream_B
 ){
     #pragma HLS DATAFLOW
 
     read_A_loop:
-    for(int block_row = 0; block_row < (BLOCK_SIZE/TILE_SIZE); block_row++){
-        for(int block_col = 0; block_col < (BLOCK_SIZE/TILE_SIZE); block_col++){
-            for(int loop_dim = 0; loop_dim < (BLOCK_SIZE/TILE_SIZE); loop_dim++){
-                int block_idx = block_row*(BLOCK_SIZE/TILE_SIZE)+block_col;
-                for(int tile_row = 0; tile_row < (TILE_SIZE*TILE_SIZE/INPUT_PACK_SIZE); tile_row++){
-                    int element_idx = block_idx*(TILE_SIZE*TILE_SIZE/INPUT_PACK_SIZE)+tile_row;
-                    MemIntType row_a = input_A[element_idx];
-                    MemVecType row_vec_a;
-                    for(int i = 0; i < INPUT_PACK_SIZE; i++){
-                        #pragma HLS UNROLL
-                        row_vec_a[i] = row_a.range(8*i+7, 8*i);
-                    }
-                    stream_A.write(row_vec_a);
-                }
+    for(int block_row = 0; block_row < BLOCK_SIZE; block_row+=TILE_SIZE){
+        for(int tile_row = 0; tile_row < TILE_SIZE; tile_row++){
+            #pragma HLS PIPELINE
+            int element_idx = block_row + tile_row;
+            MemIntType row_a = input_A[element_idx];
+            MemVecType row_vec_a;
+            for(int i = 0; i < INPUT_PACK_SIZE; i++){
+                #pragma HLS UNROLL
+                row_vec_a[i] = row_a.range(8*i+7, 8*i);
             }
+            stream_A.write(row_vec_a);
         }
     }
 
     read_B_loop:
-    for(int loop_dim = 0; loop_dim < (BLOCK_SIZE/TILE_SIZE); loop_dim++){
-        for(int block_col = 0; block_col < (BLOCK_SIZE/TILE_SIZE); block_col++){
-            for(int block_row = 0; block_row < (BLOCK_SIZE/TILE_SIZE); block_row++){
-                int block_idx = block_col*(BLOCK_SIZE/TILE_SIZE)+block_row;
-                for(int tile_col = 0; tile_col < (TILE_SIZE*TILE_SIZE/INPUT_PACK_SIZE); tile_col++){
-                    int element_idx = block_idx*(TILE_SIZE*TILE_SIZE/INPUT_PACK_SIZE)+tile_col;
-                    MemIntType row_b = input_B[element_idx];
-                    MemVecType row_vec_b;
-                    for(int i = 0; i < INPUT_PACK_SIZE; i++){
-                        #pragma HLS UNROLL
-                        row_vec_b[i] = row_b.range(8*i+7, 8*i);
-                    }
-                    stream_B.write(row_vec_b);
-                }
+    for(int block_col = 0; block_col < BLOCK_SIZE; block_col+=TILE_SIZE){
+        for(int tile_col = 0; tile_col < TILE_SIZE; tile_col++){
+            #pragma HLS PIPELINE
+            int element_idx = block_col + tile_col;
+            MemIntType col_b = input_A[element_idx];
+            MemVecType col_vec_b;
+            for(int i = 0; i < INPUT_PACK_SIZE; i++){
+                #pragma HLS UNROLL
+                col_vec_b[i] = col_b.range(8*i+7, 8*i);
             }
+            stream_B.write(col_vec_b);
         }
     }
-
 }
 
 void unpack_ap_uint48(ap_uint<48> packed_data, int8_t unpacked[6]) {
@@ -289,6 +274,58 @@ void base_mm_systolic(
     }
 }
 
+void mac(
+    MemVecType buffer_A[BLOCK_SIZE],
+    MemStream& stream_B,
+    hls::stream<hls::vector<DTYPE_OUT, OUTPUT_PACK_SIZE>>& stream_C
+){
+    MemVecType buffer_B[TILE_SIZE];
+    #pragma HLS ARRAY_PARTITION variable=buffer_B complete dim=1
+    hls::vector<DTYPE_OUT, OUTPUT_PACK_SIZE> vec_C;
+
+    read_B:
+    for(int block_col = 0; block_col < TILE_SIZE; block_col++){
+        #pragma HLS PIPELINE
+        buffer_B[block_col] = stream_B.read();
+    }
+
+    tile_mac:
+    for(int block_row = 0; block_row < BLOCK_SIZE; block_row += TILE_SIZE){
+        #pragma HLS PIPELINE
+        for(int tile_col = 0; tile_col < TILE_SIZE; tile_col++){
+            #pragma HLS UNROLL
+            DTYPE_OUT sum = 0;
+            for(int k = 0; k < INPUT_PACK_SIZE; k++){
+                sum += (int32_t)buffer_A[k] * buffer_B[k];
+            }
+            vec_C[tile_col] = sum;
+        }
+        write_C:
+        stream_C << vec_C;
+    }
+
+}
+
+void GemmBlock(
+    MemStream& stream_A,
+    MemStream& stream_B,
+    hls::stream<hls::vector<DTYPE_OUT, OUTPUT_PACK_SIZE>>& stream_C
+){
+    #pragma HLS DATAFLOW
+
+    MemVecType buffer_A[BLOCK_SIZE];
+    #pragma HLS ARRAY_PARTITION variable=buffer_A complete dim=1
+
+    read_A:
+    for(int block_row = 0; block_row < BLOCK_SIZE; block_row++){
+        buffer_A[block_row] = stream_A.read();
+    }
+
+    mac:
+    
+
+}
+
 
 void GemmBlock_wide(
     MemStream& stream_A,
@@ -404,9 +441,9 @@ void GemmWriteC_wide(
 
 
 void mm_pipeline(
-    ap_uint<48>* A,
-    ap_uint<48>* B,
-    ap_uint<192>* C
+    MemIntType* A,
+    MemIntType* B,
+    MemIntType* C
 ){
     #pragma HLS INTERFACE m_axi port=A offset=slave bundle=gmemA depth=BLOCK_SIZE*BLOCK_SIZE
     #pragma HLS INTERFACE m_axi port=B offset=slave bundle=gmemB depth=BLOCK_SIZE*BLOCK_SIZE
