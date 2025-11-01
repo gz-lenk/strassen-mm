@@ -35,6 +35,7 @@ void pack_A(int8_t* A_original, ap_uint<192>* A_packed){
                 int8_t value = A_original[original_row * BLOCK_SIZE + original_col];
                 packed_value.range(8 * i + 7, 8 * i) = (ap_uint<8>)value;
             }
+            A_packed[packed_idx++] = packed_value;
         }
     }
 }
@@ -45,7 +46,7 @@ void pack_B(int8_t* B_original, ap_uint<192>* B_packed) {
     for (int block_col = 0; block_col < BLOCK_SIZE; block_col += TILE_SIZE) {
         for (int tile_col = 0; tile_col < TILE_SIZE; tile_col++) {
             ap_uint<192> packed_value = 0;
-            for (int i = 0; i < TILE_SIZE; i++) {
+            for (int i = 0; i < INPUT_PACK_SIZE; i++) {
                 int original_row = i;
                 int original_col = block_col + tile_col;
                 int8_t value = B_original[original_row * BLOCK_SIZE + original_col];
@@ -59,7 +60,7 @@ void pack_B(int8_t* B_original, ap_uint<192>* B_packed) {
 // 解包C矩阵
 void unpack_C(ap_uint<192>* C_packed, int32_t* C_unpacked) {
     int unpacked_index = 0;
-    for (int i = 0; i < (BLOCK_SIZE * BLOCK_SIZE) / 6; i++) {
+    for (int i = 0; i < (BLOCK_SIZE * BLOCK_SIZE) / OUTPUT_PACK_SIZE; i++) {
         ap_uint<192> packed_data = C_packed[i];
         for (int j = 0; j < 6; j++) {
             if (unpacked_index < BLOCK_SIZE * BLOCK_SIZE) {
@@ -72,19 +73,15 @@ void unpack_C(ap_uint<192>* C_packed, int32_t* C_unpacked) {
 // 重排C矩阵到正常顺序
 void rearrange_C(int32_t* C_hardware, int32_t* C_normal) {
     int hardware_index = 0;
-    for (int block_i = 0; block_i < BLOCK_SIZE; block_i += TILE_SIZE) {
-        for (int block_j = 0; block_j < BLOCK_SIZE; block_j += TILE_SIZE) {
-            for (int tile_row = 0; tile_row < TILE_SIZE; tile_row++) {
-                int32_t temp_data[TILE_SIZE];
-                for (int j = 0; j < TILE_SIZE; j++) {
-                    temp_data[j] = C_hardware[hardware_index * TILE_SIZE + j];
-                }
-                for (int tile_col = 0; tile_col < TILE_SIZE; tile_col++) {
-                    int normal_index = (block_i + tile_row) * BLOCK_SIZE + (block_j + tile_col);
-                    C_normal[normal_index] = temp_data[tile_col];
-                }
-                hardware_index++;
+    for(int block_col = 0; block_col < BLOCK_SIZE; block_col += TILE_SIZE){
+        for(int block_row = 0; block_row < BLOCK_SIZE; block_row ++){
+            int32_t temp_data[TILE_SIZE];
+            for(int j = 0; j < TILE_SIZE; j++){
+                temp_data[j] = C_hardware[hardware_index * TILE_SIZE + j];
+                int normal_index = block_row * BLOCK_SIZE + block_col + j;
+                C_normal[normal_index] = temp_data[j];
             }
+            hardware_index++;
         }
     }
 }
@@ -122,13 +119,14 @@ int test_random_matrices() {
     std::cout << "=== Testing Random Matrices ===" << std::endl;
 
     const int matrix_size = BLOCK_SIZE * BLOCK_SIZE;
-    const int packed_size = matrix_size / 6;
+    const int packed_size_input = matrix_size / 24;
+    const int packed_size_output = matrix_size / 6;
     
     int8_t A_original[matrix_size];
     int8_t B_original[matrix_size];
-    ap_uint<48> A_packed[packed_size];
-    ap_uint<48> B_packed[packed_size];
-    ap_uint<192> C_packed[packed_size];
+    ap_uint<192> A_packed[packed_size_input];
+    ap_uint<192> B_packed[packed_size_input];
+    ap_uint<192> C_packed[packed_size_output];
     int32_t C_hw[matrix_size];
     int32_t C_sw[matrix_size];
 
@@ -175,8 +173,8 @@ int test_edge_cases() {
     {
         int8_t A_original[matrix_size] = {0};
         int8_t B_original[matrix_size] = {0};
-        ap_uint<48> A_packed[packed_size];
-        ap_uint<48> B_packed[packed_size];
+        ap_uint<192> A_packed[24];
+        ap_uint<192> B_packed[24];
         ap_uint<192> C_packed[packed_size];
         int32_t C_hw[matrix_size];
         int32_t C_sw[matrix_size];
@@ -202,8 +200,8 @@ int test_edge_cases() {
     {
         int8_t A_original[matrix_size];
         int8_t B_original[matrix_size];
-        ap_uint<48> A_packed[packed_size];
-        ap_uint<48> B_packed[packed_size];
+        ap_uint<192> A_packed[24];
+        ap_uint<192> B_packed[24];
         ap_uint<192> C_packed[packed_size];
         int32_t C_hw[matrix_size];
         int32_t C_sw[matrix_size];
